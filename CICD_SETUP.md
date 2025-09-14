@@ -143,25 +143,32 @@ dotnet add package SimpleDispatch.ServiceBase --version 1.2.0
 
 ### Common Issues
 
-1. **"Unable to load the service index for source"**
+1. **"Your request could not be authenticated by the GitHub Packages service"**
+
+   - This is usually caused by incorrect NuGet source configuration
+   - The workflow now properly configures authentication with GitHub Packages
+   - Ensure your repository has the `packages: write` permission in the workflow
+   - Verify the repository URL format is correct in the workflow
+
+2. **"Unable to load the service index for source"**
 
    - Check that your NuGet.config is properly configured
    - Verify your GitHub token has `read:packages` permission
    - Ensure the package source URL is correct
 
-2. **"Package not found"**
+3. **"Package not found"**
 
    - Verify the package was published successfully in GitHub Actions
    - Check the Packages tab in your GitHub repository
    - Ensure the package version exists
 
-3. **Build failures**
+4. **Build failures**
 
    - Check the Actions logs for detailed error messages
    - Ensure all dependencies are correctly referenced
    - Verify the .NET version in the workflow matches your project
 
-4. **Permission errors**
+5. **Permission errors**
    - Verify repository permissions for packages
    - Check that GITHUB_TOKEN has sufficient permissions
 
