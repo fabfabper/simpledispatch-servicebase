@@ -16,11 +16,12 @@ GitHub Actions automatically provides a `GITHUB_TOKEN` with the necessary permis
 
 ### Main Workflow (`publish-github-packages.yml`)
 
-- **Triggers**: Push to `main` branch
+- **Triggers**: Push to `main` branch, Pull requests to `main`
 - **Actions**:
-  - Builds and tests the project
-  - Creates NuGet package
-  - Publishes to GitHub Packages
+  - Builds and tests the project on all triggers
+  - Creates NuGet package (only on push to main)
+  - Publishes to GitHub Packages (only on push to main)
+  - Creates GitHub releases automatically (only on push to main)
   - Uploads artifacts
 
 ### Key Features

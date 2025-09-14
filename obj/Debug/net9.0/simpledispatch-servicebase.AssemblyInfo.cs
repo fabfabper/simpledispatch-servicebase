@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(("Base service package for SimpleDispatch microservices with RabbitMQ messaging, Po" +
     "stgreSQL database support, and REST API capabilities"))]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+698a8875b931aa46b0a4ca2f146bd73d76b4f09e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f1d81acdf517a6f7d7912cd1cfa85965fc0a9c9c")]
 [assembly: System.Reflection.AssemblyProductAttribute("simpledispatch-servicebase")]
 [assembly: System.Reflection.AssemblyTitleAttribute("simpledispatch-servicebase")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
