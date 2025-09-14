@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>SimpleDispatch.ServiceBase</id>
+    <version>1.0.0</version>
+    <authors>Fabian Perler</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <readme>README.md</readme>
+    <description>Base service package for SimpleDispatch microservices with RabbitMQ messaging and REST API capabilities</description>
+    <releaseNotes>Initial release with RabbitMQ messaging and REST API base functionality</releaseNotes>
+    <tags>microservices rabbitmq api base</tags>
+    <repository type="git" url="https://github.com/fabianperler/simpledispatch" />
+    <dependencies>
+      <group targetFramework="net9.0">
+        <dependency id="Microsoft.EntityFrameworkCore" version="8.0.8" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.EntityFrameworkCore.Design" version="8.0.8" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.EntityFrameworkCore.Tools" version="8.0.8" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Configuration" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.DependencyInjection" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Hosting" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Logging" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Logging.Console" version="8.0.0" exclude="Build,Analyzers" />
+        <dependency id="Newtonsoft.Json" version="13.0.3" exclude="Build,Analyzers" />
+        <dependency id="Npgsql.EntityFrameworkCore.PostgreSQL" version="8.0.4" exclude="Build,Analyzers" />
+        <dependency id="RabbitMQ.Client" version="6.8.1" exclude="Build,Analyzers" />
+        <dependency id="Swashbuckle.AspNetCore" version="6.6.2" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkReferences>
+      <group targetFramework="net9.0">
+        <frameworkReference name="Microsoft.AspNetCore.App" />
+      </group>
+    </frameworkReferences>
+  </metadata>
+  <files>
+    <file src="/Users/fabianperler/simpledispatch/simpledispatch-servicebase/bin/Debug/net9.0/simpledispatch-servicebase.runtimeconfig.json" target="lib/net9.0/simpledispatch-servicebase.runtimeconfig.json" />
+    <file src="/Users/fabianperler/simpledispatch/simpledispatch-servicebase/bin/Debug/net9.0/simpledispatch-servicebase.dll" target="lib/net9.0/simpledispatch-servicebase.dll" />
+    <file src="/Users/fabianperler/simpledispatch/simpledispatch-servicebase/README.md" target="/README.md" />
+    <file src="/Users/fabianperler/simpledispatch/simpledispatch-servicebase/CHANGELOG.md" target="/CHANGELOG.md" />
+    <file src="/Users/fabianperler/simpledispatch/simpledispatch-servicebase/LICENSE" target="/LICENSE" />
+    <file src="/Users/fabianperler/simpledispatch/simpledispatch-servicebase/Examples/ExampleMicroservice.cs" target="content/Examples//ExampleMicroservice.cs" />
+    <file src="/Users/fabianperler/simpledispatch/simpledispatch-servicebase/Examples/USAGE.md" target="content/Examples//USAGE.md" />
+  </files>
+</package>

@@ -1,0 +1,14 @@
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/bin/Release/net9.0/simpledispatch-servicebase.deps.json
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/bin/Release/net9.0/simpledispatch-servicebase.dll
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/bin/Release/net9.0/simpledispatch-servicebase.pdb
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/obj/Release/net9.0/simpledispatch-servicebase.csproj.AssemblyReference.cache
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/obj/Release/net9.0/simpledispatch-servicebase.GeneratedMSBuildEditorConfig.editorconfig
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/obj/Release/net9.0/simpledispatch-servicebase.AssemblyInfoInputs.cache
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/obj/Release/net9.0/simpledispatch-servicebase.AssemblyInfo.cs
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/obj/Release/net9.0/simpledispatch-servicebase.csproj.CoreCompileInputs.cache
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/obj/Release/net9.0/simpledispatch-servicebase.dll
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/obj/Release/net9.0/refint/simpledispatch-servicebase.dll
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/obj/Release/net9.0/simpledispatch-servicebase.pdb
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/obj/Release/net9.0/ref/simpledispatch-servicebase.dll
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/bin/Release/net9.0/simpledispatch-servicebase.runtimeconfig.json
+/Users/fabianperler/simpledispatch/simpledispatch-servicebase/obj/Release/net9.0/simpledispatch-servicebase.genruntimeconfig.cache

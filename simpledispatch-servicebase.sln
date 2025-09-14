@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "simpledispatch-servicebase", "simpledispatch-servicebase.csproj", "{6CECBB55-1CCC-8E17-BF90-4DA8D7FC0827}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6CECBB55-1CCC-8E17-BF90-4DA8D7FC0827}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CECBB55-1CCC-8E17-BF90-4DA8D7FC0827}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CECBB55-1CCC-8E17-BF90-4DA8D7FC0827}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CECBB55-1CCC-8E17-BF90-4DA8D7FC0827}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AFF989F9-8241-45A2-BF33-8A323E6DA231}
+	EndGlobalSection
+EndGlobal
