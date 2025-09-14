@@ -145,16 +145,16 @@ dotnet add package SimpleDispatch.ServiceBase --version 1.2.0
 
 1. **"Your request could not be authenticated by the GitHub Packages service"**
 
-   - This is usually caused by incorrect NuGet source configuration
-   - The workflow now properly configures authentication with GitHub Packages
+   - This was resolved by using the built-in authentication in the setup-dotnet action
+   - The workflow now properly configures authentication automatically
    - Ensure your repository has the `packages: write` permission in the workflow
-   - Verify the repository URL format is correct in the workflow
 
 2. **"Unable to load the service index for source"**
 
-   - Check that your NuGet.config is properly configured
-   - Verify your GitHub token has `read:packages` permission
-   - Ensure the package source URL is correct
+   - This typically occurs when the NuGet source URL format is incorrect
+   - The workflow now uses the correct format: `https://nuget.pkg.github.com/[owner]/index.json`
+   - Check that your GitHub token has `read:packages` permission
+   - Verify the repository owner name is correct
 
 3. **"Package not found"**
 
