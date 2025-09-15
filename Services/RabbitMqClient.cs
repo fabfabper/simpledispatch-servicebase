@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
@@ -10,12 +11,17 @@ namespace SimpleDispatch.ServiceBase.Services;
 
 /// <summary>
 /// RabbitMQ client implementation for message consumption and publishing
+/// 
+/// This implementation uses IServiceProvider to resolve IMessageHandler for each message
+/// to avoid the DI anti-pattern where a singleton service (IRabbitMqClient) would directly
+/// inject a scoped service (IMessageHandler). Each message is processed in its own DI scope,
+/// ensuring proper lifecycle management for DbContext and other scoped services.
 /// </summary>
 public class RabbitMqClient : IRabbitMqClient
 {
     private readonly ILogger<RabbitMqClient> _logger;
     private readonly RabbitMqSettings _settings;
-    private readonly IMessageHandler _messageHandler;
+    private readonly IServiceProvider _serviceProvider;
     private IConnection? _connection;
     private IModel? _channel;
     private bool _disposed = false;
@@ -23,11 +29,11 @@ public class RabbitMqClient : IRabbitMqClient
     public RabbitMqClient(
         ILogger<RabbitMqClient> logger,
         IOptions<RabbitMqSettings> settings,
-        IMessageHandler messageHandler)
+        IServiceProvider serviceProvider)
     {
         _logger = logger;
         _settings = settings.Value;
-        _messageHandler = messageHandler;
+        _serviceProvider = serviceProvider;
     }
 
     public async Task StartConsumingAsync()
@@ -66,6 +72,9 @@ public class RabbitMqClient : IRabbitMqClient
             var consumer = new EventingBasicConsumer(_channel);
             consumer.Received += async (model, ea) =>
             {
+                // Create a new scope for each message to ensure proper DI lifecycle
+                using var scope = _serviceProvider.CreateScope();
+                
                 try
                 {
                     var body = ea.Body.ToArray();
@@ -73,7 +82,9 @@ public class RabbitMqClient : IRabbitMqClient
 
                     _logger.LogInformation("Received message: {Message}", message);
 
-                    await _messageHandler.HandleMessageAsync(message, ea);
+                    // Resolve the message handler from the scoped service provider
+                    var messageHandler = scope.ServiceProvider.GetRequiredService<IMessageHandler>();
+                    await messageHandler.HandleMessageAsync(message, ea);
 
                     if (!_settings.AutoAck)
                     {

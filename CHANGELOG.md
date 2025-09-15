@@ -2,6 +2,26 @@
 
 All notable changes to SimpleDispatch.ServiceBase will be documented in this file.
 
+## [1.2.1] - 2024-09-15
+
+### Fixed
+
+- **Critical DI Scoping Issue**: Fixed dependency injection anti-pattern where `IRabbitMqClient` (singleton) was directly injecting `IMessageHandler` (scoped service)
+- **DbContext Scope Issues**: Resolved issues with DbContext and other scoped services being accessed from singleton context
+- **Message Handler Lifetime**: Each message now gets processed in its own dependency injection scope, ensuring proper lifecycle management
+
+### Changed
+
+- **RabbitMqClient Implementation**: Now uses `IServiceProvider` to create scoped service instances for each message
+- **Dependency Resolution**: Message handlers are now resolved per-message rather than injected at construction time
+
+### Technical Details
+
+- The `RabbitMqClient` constructor now accepts `IServiceProvider` instead of `IMessageHandler`
+- Each incoming message creates a new DI scope using `_serviceProvider.CreateScope()`
+- Message handlers and their dependencies (including DbContext) are resolved within the message-specific scope
+- Automatic scope disposal ensures proper cleanup after message processing
+
 ## [1.2.0] - 2024-09-14
 
 ### Changed

@@ -14,6 +14,7 @@ A NuGet package that provides a base foundation for SimpleDispatch microservices
 - **Logging**: Structured logging with configurable levels
 - **Health Checks**: Built-in health check endpoints
 - **CORS Support**: Pre-configured CORS for cross-origin requests
+- **Proper DI Scoping**: Correctly handles scoped services (like DbContext) in message handlers
 
 ## Installation
 
@@ -27,7 +28,7 @@ Create a `NuGet.config` file in your project root:
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
-    <add key="github" value="https://nuget.pkg.github.com/[YOUR_GITHUB_USERNAME]/index.json" />
+    <add key="github" value="https://nuget.pkg.github.com/fabfabper/index.json" />
   </packageSources>
   <packageSourceCredentials>
     <github>

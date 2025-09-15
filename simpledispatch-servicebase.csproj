@@ -8,14 +8,14 @@
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>SimpleDispatch.ServiceBase</PackageId>
-    <PackageVersion>1.2.0</PackageVersion>
+    <PackageVersion>1.2.1</PackageVersion>
     <Authors>Fabian Perler</Authors>
     <Description>Base service package for SimpleDispatch microservices with RabbitMQ messaging, PostgreSQL database support, and REST API capabilities</Description>
     <PackageTags>microservices;rabbitmq;api;base</PackageTags>
     <RepositoryUrl>https://github.com/fabianperler/simpledispatch</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Version 1.2.0: Migrated package distribution to GitHub Packages with simplified CI/CD workflow</PackageReleaseNotes>
+    <PackageReleaseNotes>Version 1.2.1: Fixed critical DI scoping issue where IRabbitMqClient (singleton) was injecting IMessageHandler (scoped), which caused issues with DbContext and other scoped services. Now uses IServiceProvider to create proper scopes for message handling.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
