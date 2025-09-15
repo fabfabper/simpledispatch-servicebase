@@ -2,6 +2,49 @@
 
 All notable changes to SimpleDispatch.ServiceBase will be documented in this file.
 
+## [1.3.0] - 2024-09-15
+
+### Added
+
+- **API Port Configuration**: Microservices can now configure HTTP and HTTPS ports
+- **ApiSettings Configuration Class**: New configuration section for API server settings
+- **Port Configuration Methods**: Added `ConfigureHttpPort()`, `ConfigureHttpPorts()`, and `ConfigureUrls()` methods
+- **Flexible URL Configuration**: Support for custom URLs and binding addresses
+- **Production Swagger Control**: Option to enable/disable Swagger in production environments
+- **HTTPS Redirection Control**: Configurable HTTPS redirection behavior
+
+### API Configuration Options
+
+- `HttpPort`: Configure HTTP server port
+- `HttpsPort`: Configure HTTPS server port
+- `Urls`: Specify custom URLs to listen on
+- `EnableHttpsRedirection`: Control HTTPS redirection (default: true)
+- `EnableSwaggerInProduction`: Enable Swagger in production (default: false)
+
+### Usage Examples
+
+```csharp
+// In appsettings.json
+{
+  "Api": {
+    "HttpPort": 8080,
+    "HttpsPort": 8443,
+    "EnableHttpsRedirection": true
+  }
+}
+
+// Or programmatically
+public class MyService : BaseService
+{
+    public MyService(string[] args) : base(args)
+    {
+        ConfigureHttpPort(8080);
+        // or ConfigureHttpPorts(8080, 8443);
+        // or ConfigureUrls("http://0.0.0.0:8080");
+    }
+}
+```
+
 ## [1.2.1] - 2024-09-15
 
 ### Fixed

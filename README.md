@@ -62,6 +62,14 @@ public class MyMicroservice : BaseService
 {
     public MyMicroservice(string[] args) : base(args)
     {
+        // Configure port programmatically (optional)
+        ConfigureHttpPort(8080); // HTTP only
+
+        // Or configure both HTTP and HTTPS ports
+        // ConfigureHttpPorts(8080, 8443);
+
+        // Or configure custom URLs
+        // ConfigureUrls("http://0.0.0.0:8080", "https://0.0.0.0:8443");
     }
 
     protected override void RegisterMessageHandler()
@@ -141,6 +149,12 @@ Add the following to your `appsettings.json`:
 {
   "ConnectionStrings": {
     "DefaultConnection": "Host=localhost;Database=myservice;Username=postgres;Password=postgres"
+  },
+  "Api": {
+    "HttpPort": 5000,
+    "HttpsPort": 5001,
+    "EnableHttpsRedirection": true,
+    "EnableSwaggerInProduction": false
   },
   "Database": {
     "MaxRetryCount": 3,
@@ -265,6 +279,16 @@ public class MyController : BaseApiController
 - 📋 **[Changelog](CHANGELOG.md)** - Version history and release notes
 
 ## Configuration Options
+
+### API Settings
+
+| Property                    | Description                             | Default |
+| --------------------------- | --------------------------------------- | ------- |
+| `HttpPort`                  | Port for HTTP server                    | Not set |
+| `HttpsPort`                 | Port for HTTPS server                   | Not set |
+| `Urls`                      | Custom URLs to listen on                | Not set |
+| `EnableHttpsRedirection`    | Whether to redirect HTTP to HTTPS       | `true`  |
+| `EnableSwaggerInProduction` | Whether to enable Swagger in production | `false` |
 
 ### RabbitMQ Settings
 

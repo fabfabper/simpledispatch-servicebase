@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +37,10 @@ public abstract class BaseService
     /// </summary>
     private void ConfigureBaseServices()
     {
+        // Configure API settings
+        Builder.Services.Configure<ApiSettings>(
+            Builder.Configuration.GetSection(ApiSettings.SectionName));
+
         // Configure RabbitMQ settings
         Builder.Services.Configure<RabbitMqSettings>(
             Builder.Configuration.GetSection(RabbitMqSettings.SectionName));
@@ -43,6 +48,9 @@ public abstract class BaseService
         // Configure Database settings
         Builder.Services.Configure<DatabaseSettings>(
             Builder.Configuration.GetSection(DatabaseSettings.SectionName));
+
+        // Configure API server URLs and ports
+        ConfigureApiServer();
 
         // Register core services
         Builder.Services.AddSingleton<IRabbitMqClient, RabbitMqClient>();
@@ -75,6 +83,44 @@ public abstract class BaseService
 
         // Configure logging
         Builder.Logging.AddConsole();
+    }
+
+    /// <summary>
+    /// Configure the API server URLs and ports
+    /// </summary>
+    private void ConfigureApiServer()
+    {
+        var apiSettings = Builder.Configuration.GetSection(ApiSettings.SectionName).Get<ApiSettings>();
+        
+        if (apiSettings != null)
+        {
+            var urls = new List<string>();
+
+            // If custom URLs are specified, use them
+            if (apiSettings.Urls?.Length > 0)
+            {
+                urls.AddRange(apiSettings.Urls);
+            }
+            else
+            {
+                // Build URLs from port configuration
+                if (apiSettings.HttpPort.HasValue)
+                {
+                    urls.Add($"http://localhost:{apiSettings.HttpPort.Value}");
+                }
+                
+                if (apiSettings.HttpsPort.HasValue)
+                {
+                    urls.Add($"https://localhost:{apiSettings.HttpsPort.Value}");
+                }
+            }
+
+            // Apply URL configuration if any URLs were specified
+            if (urls.Count > 0)
+            {
+                Builder.WebHost.UseUrls(urls.ToArray());
+            }
+        }
     }
 
     /// <summary>
@@ -111,14 +157,21 @@ public abstract class BaseService
 
         App = Builder.Build();
 
+        // Get API settings
+        var apiSettings = App.Configuration.GetSection(ApiSettings.SectionName).Get<ApiSettings>() ?? new ApiSettings();
+
         // Configure base middleware
-        if (App.Environment.IsDevelopment())
+        if (App.Environment.IsDevelopment() || apiSettings.EnableSwaggerInProduction)
         {
             App.UseSwagger();
             App.UseSwaggerUI();
         }
 
-        App.UseHttpsRedirection();
+        if (apiSettings.EnableHttpsRedirection)
+        {
+            App.UseHttpsRedirection();
+        }
+        
         App.UseCors();
         App.UseAuthorization();
         App.MapControllers();
@@ -193,5 +246,33 @@ public abstract class BaseService
 
         // Register Unit of Work
         Builder.Services.AddScoped<IUnitOfWork, UnitOfWork<TContext>>();
+    }
+
+    /// <summary>
+    /// Configure the API to listen on a specific HTTP port
+    /// </summary>
+    /// <param name="port">The HTTP port number</param>
+    protected void ConfigureHttpPort(int port)
+    {
+        Builder.WebHost.UseUrls($"http://localhost:{port}");
+    }
+
+    /// <summary>
+    /// Configure the API to listen on specific HTTP and HTTPS ports
+    /// </summary>
+    /// <param name="httpPort">The HTTP port number</param>
+    /// <param name="httpsPort">The HTTPS port number</param>
+    protected void ConfigureHttpPorts(int httpPort, int httpsPort)
+    {
+        Builder.WebHost.UseUrls($"http://localhost:{httpPort}", $"https://localhost:{httpsPort}");
+    }
+
+    /// <summary>
+    /// Configure the API to listen on custom URLs
+    /// </summary>
+    /// <param name="urls">Array of URLs to listen on</param>
+    protected void ConfigureUrls(params string[] urls)
+    {
+        Builder.WebHost.UseUrls(urls);
     }
 }
