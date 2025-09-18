@@ -52,6 +52,8 @@ await service.RunAsync();
 using SimpleDispatch.ServiceBase;
 using SimpleDispatch.ServiceBase.Interfaces;
 using OrderProcessingService.Services;
+using Microsoft.Extensions.Configuration;
+using SimpleDispatch.ServiceBase.Extensions;
 
 namespace OrderProcessingService;
 
@@ -71,6 +73,8 @@ public class OrderService : BaseService
         // Add any additional services specific to order processing
         Builder.Services.AddScoped<IOrderRepository, OrderRepository>();
         Builder.Services.AddScoped<INotificationService, NotificationService>();
+        // Register the RabbitMQ producer with configuration
+        Builder.Services.AddRabbitMqProducer(Builder.Configuration);
     }
 }
 ```
@@ -149,12 +153,15 @@ namespace OrderProcessingService.Controllers;
 public class OrderController : BaseApiController
 {
     private readonly IOrderRepository _orderRepository;
+    private readonly IRabbitMqProducer _producer;
 
     public OrderController(
         IRabbitMqClient rabbitMqClient,
-        IOrderRepository orderRepository) : base(rabbitMqClient)
+        IOrderRepository orderRepository,
+        IRabbitMqProducer producer) : base(rabbitMqClient)
     {
         _orderRepository = orderRepository;
+        _producer = producer;
     }
 
     [HttpPost]
@@ -167,9 +174,10 @@ public class OrderController : BaseApiController
 
             // Publish order created event
             var message = JsonConvert.SerializeObject(savedOrder);
-            await RabbitMqClient.PublishMessageAsync(message, "order.created");
+            // Use the producer to publish
+            await _producer.PublishAsync(message, "order.created");
 
-            return Ok(ApiResponse<Order>.CreateSuccess(savedOrder, "Order created successfully"));
+            return Ok(ApiResponse<Order>.CreateSuccess(savedOrder, "Order created and published successfully"));
         }
         catch (Exception ex)
         {
@@ -224,6 +232,18 @@ public class OrderController : BaseApiController
   },
   "ConnectionStrings": {
     "DefaultConnection": "Server=localhost;Database=OrderProcessing;Trusted_Connection=true;"
+  },
+  "RabbitMqProducer": {
+    "HostName": "localhost",
+    "Port": 5672,
+    "UserName": "guest",
+    "Password": "guest",
+    "VirtualHost": "/",
+    "ExchangeName": "orders.exchange",
+    "ExchangeType": "topic",
+    "Durable": true,
+    "AutoDelete": false,
+    "PersistentMessages": true
   }
 }
 ```

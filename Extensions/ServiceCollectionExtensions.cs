@@ -114,4 +114,17 @@ public static class ServiceCollectionExtensions
         services.AddScoped<TRepository, TImplementation>();
         return services;
     }
+
+    /// <summary>
+    /// Add a RabbitMQ producer to the DI container
+    /// </summary>
+    /// <param name="services">Service collection</param>
+    /// <param name="configuration">Configuration instance</param>
+    /// <returns>Service collection for chaining</returns>
+    public static IServiceCollection AddRabbitMqProducer(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<RabbitMqProducerSettings>(configuration.GetSection(RabbitMqProducerSettings.SectionName));
+        services.AddSingleton<IRabbitMqProducer, RabbitMqProducer>();
+        return services;
+    }
 }
