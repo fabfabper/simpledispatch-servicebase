@@ -59,14 +59,7 @@ namespace OrderProcessingService;
 
 public class OrderService : BaseService
 {
-    public OrderService(string[] args) : base(args)
-    {
-    }
-
-    protected override void RegisterMessageHandler()
-    {
-        Builder.Services.AddScoped<IMessageHandler, OrderMessageHandler>();
-    }
+    public OrderService(string[] args) : base(args) { }
 
     protected override void ConfigureServices()
     {
@@ -75,63 +68,55 @@ public class OrderService : BaseService
         Builder.Services.AddScoped<INotificationService, NotificationService>();
         // Register the RabbitMQ producer with configuration
         Builder.Services.AddRabbitMqProducer(Builder.Configuration);
+        // Register the manual RabbitMQ consumer as a BackgroundService
+        Builder.Services.AddHostedService<OrderMessageConsumerService>();
     }
 }
 ```
 
-### OrderMessageHandler.cs
+### OrderMessageConsumerService.cs (Manual Consumer)
 
 ```csharp
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using RabbitMQ.Client.Events;
-using SimpleDispatch.ServiceBase.Interfaces;
 using Newtonsoft.Json;
 using OrderProcessingService.Models;
+using SimpleDispatch.ServiceBase.Interfaces;
 
-namespace OrderProcessingService.Services;
-
-public class OrderMessageHandler : IMessageHandler
+public class OrderMessageConsumerService : BackgroundService
 {
-    private readonly ILogger<OrderMessageHandler> _logger;
-    private readonly IOrderRepository _orderRepository;
-    private readonly INotificationService _notificationService;
+    private readonly IRabbitMqClient _rabbitMqClient;
+    private readonly ILogger<OrderMessageConsumerService> _logger;
+    private readonly IServiceProvider _serviceProvider;
 
-    public OrderMessageHandler(
-        ILogger<OrderMessageHandler> logger,
-        IOrderRepository orderRepository,
-        INotificationService notificationService)
+    public OrderMessageConsumerService(IRabbitMqClient rabbitMqClient, ILogger<OrderMessageConsumerService> logger, IServiceProvider serviceProvider)
     {
+        _rabbitMqClient = rabbitMqClient;
         _logger = logger;
-        _orderRepository = orderRepository;
-        _notificationService = notificationService;
+        _serviceProvider = serviceProvider;
     }
 
-    public async Task HandleMessageAsync(string message, BasicDeliverEventArgs args)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        try
+        _logger.LogInformation("Starting manual RabbitMQ consumer loop...");
+        await _rabbitMqClient.ConsumeAsync(async (message, args) =>
         {
+            using var scope = _serviceProvider.CreateScope();
+            var orderRepository = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
+            var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
             _logger.LogInformation("Received order message: {Message}", message);
-
             var order = JsonConvert.DeserializeObject<Order>(message);
             if (order == null)
             {
                 _logger.LogWarning("Failed to deserialize order message");
                 return;
             }
-
             // Process the order
-            await _orderRepository.SaveOrderAsync(order);
-
+            await orderRepository.SaveOrderAsync(order);
             // Send notification
-            await _notificationService.SendOrderConfirmationAsync(order);
-
+            await notificationService.SendOrderConfirmationAsync(order);
             _logger.LogInformation("Order processed successfully: {OrderId}", order.Id);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing order message");
-            throw; // Re-throw to trigger message requeue
-        }
+        }, stoppingToken);
     }
 }
 ```
@@ -259,6 +244,7 @@ public class OrderController : BaseApiController
 ## Key Benefits
 
 - **Minimal Boilerplate**: The base service handles all the infrastructure setup
-- **Extensible**: Easy to add custom message handlers and services
+- **Manual RabbitMQ Consumer**: Use BackgroundService for robust, explicit message consumption
+- **Extensible**: Easy to add custom consumers, producers, and services
 - **Production Ready**: Includes logging, health checks, and error handling
 - **Testable**: Clean separation of concerns makes unit testing straightforward

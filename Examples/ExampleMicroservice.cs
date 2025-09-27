@@ -1,11 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using SimpleDispatch.ServiceBase;
 using SimpleDispatch.ServiceBase.Database;
 using SimpleDispatch.ServiceBase.Database.Interfaces;
 using SimpleDispatch.ServiceBase.Interfaces;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SimpleDispatch.ServiceBase.Examples;
 
@@ -35,6 +41,8 @@ public class ExampleMicroservice : BaseService
         // Add any additional services specific to this microservice
         Builder.Services.AddScoped<IExampleService, ExampleService>();
         Builder.Services.AddScoped<IExampleRepository, ExampleRepository>();
+        Builder.Services.AddSingleton<WebSocketManager>();
+        Builder.Services.AddHostedService<RabbitMqConsumerService>();
     }
 }
 
@@ -70,6 +78,81 @@ public class ExampleMessageHandler : IMessageHandler
             _logger.LogError(ex, "Error processing message: {Message}", message);
             throw; // Re-throw to trigger message requeue
         }
+    }
+}
+
+/// <summary>
+/// RabbitMQ consumer service implementation as a BackgroundService
+/// </summary>
+public class RabbitMqConsumerService : BackgroundService
+{
+    private readonly ILogger<RabbitMqConsumerService> _logger;
+    private readonly IConfiguration _configuration;
+    private readonly WebSocketManager _wsManager;
+    private IConnection? _connection;
+    private IModel? _channel;
+
+    public RabbitMqConsumerService(ILogger<RabbitMqConsumerService> logger, IConfiguration configuration, WebSocketManager wsManager)
+    {
+        _logger = logger;
+        _configuration = configuration;
+        _wsManager = wsManager;
+        InitializeRabbitMq();
+    }
+
+    private void InitializeRabbitMq()
+    {
+        var rabbitConfig = _configuration.GetSection("RabbitMq");
+        var factory = new ConnectionFactory
+        {
+            HostName = rabbitConfig["HostName"],
+            Port = int.Parse(rabbitConfig["Port"] ?? "5672"),
+            UserName = rabbitConfig["UserName"],
+            Password = rabbitConfig["Password"],
+            VirtualHost = rabbitConfig["VirtualHost"]
+        };
+        _connection = factory.CreateConnection();
+        _channel = _connection.CreateModel();
+        var queueName = rabbitConfig["QueueName"];
+        var exchangeName = rabbitConfig["ExchangeName"];
+        var exchangeType = rabbitConfig["ExchangeType"];
+        var durable = bool.Parse(rabbitConfig["Durable"] ?? "true");
+        _channel.ExchangeDeclare(exchange: exchangeName, type: exchangeType, durable: durable);
+        _channel.QueueDeclare(queue: queueName, durable: durable, exclusive: false, autoDelete: false);
+        _channel.QueueBind(queue: queueName, exchange: exchangeName, routingKey: "");
+    }
+
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var rabbitConfig = _configuration.GetSection("RabbitMq");
+        var queueName = rabbitConfig["QueueName"];
+        var consumer = new EventingBasicConsumer(_channel);
+        consumer.Received += async (model, ea) =>
+        {
+            var body = ea.Body.ToArray();
+            var message = Encoding.UTF8.GetString(body);
+            _logger.LogInformation($"Received message: {message}");
+            if (_wsManager != null)
+            {
+                await _wsManager.BroadcastAsync(message);
+            }
+            if (!bool.Parse(rabbitConfig["AutoAck"] ?? "false"))
+            {
+                if (_channel != null)
+                {
+                    _channel.BasicAck(ea.DeliveryTag, false);
+                }
+            }
+        };
+        _channel.BasicConsume(queue: queueName, autoAck: bool.Parse(rabbitConfig["AutoAck"] ?? "false"), consumer: consumer);
+        return Task.CompletedTask;
+    }
+
+    public override void Dispose()
+    {
+        _channel?.Close();
+        _connection?.Close();
+        base.Dispose();
     }
 }
 

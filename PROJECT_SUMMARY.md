@@ -10,7 +10,7 @@ Successfully created a comprehensive NuGet package that serves as the foundation
 
 - **RabbitMqClient**: Full-featured RabbitMQ client with connection management
 - **Message Publishing**: Send messages to exchanges with routing keys
-- **Message Consumption**: Subscribe to queues with configurable settings
+- **Manual Message Consumption**: Use BackgroundService for robust, explicit message consumption
 - **Error Handling**: Automatic message requeue on processing failures
 - **Configuration**: Flexible RabbitMQ settings through appsettings.json
 
@@ -23,13 +23,11 @@ Successfully created a comprehensive NuGet package that serves as the foundation
 - **Connection Resilience**: Automatic retry policies for database operations
 - **Database Configuration**: Configurable PostgreSQL settings
 
-### �🔧 Extensible Message Handling
+### 🔧 Extensible Message Handling
 
-- **IMessageHandler Interface**: Clean abstraction for message processing
-- **DefaultMessageHandler**: Base implementation that can be overridden
-- **Custom Handlers**: Easy to implement custom message handling logic
-- **Database Integration**: Message handlers can use repositories and transactions
-- **Dependency Injection**: Full DI support for message handlers
+- **Manual Consumer Pattern**: Implement custom BackgroundService for message processing
+- **Database Integration**: Consumers can use repositories and transactions
+- **Dependency Injection**: Full DI support for consumers and producers
 
 ### 🌐 REST API Foundation
 
@@ -99,17 +97,12 @@ dotnet add package SimpleDispatch.ServiceBase
 
 For detailed installation instructions, see the [README](README.md#installation).
 
-### 2. Create Your Microservice with Database
+### 2. Create Your Microservice with Database and Manual RabbitMQ Consumer
 
 ```csharp
 public class MyMicroservice : BaseService
 {
     public MyMicroservice(string[] args) : base(args) { }
-
-    protected override void RegisterMessageHandler()
-    {
-        Builder.Services.AddScoped<IMessageHandler, MyMessageHandler>();
-    }
 
     protected override void ConfigureDatabase()
     {
@@ -119,6 +112,7 @@ public class MyMicroservice : BaseService
     protected override void ConfigureServices()
     {
         Builder.Services.AddScoped<IMyRepository, MyRepository>();
+        Builder.Services.AddHostedService<MyRabbitMqConsumerService>();
     }
 }
 ```
@@ -137,29 +131,44 @@ public class MyRepository : BaseRepository<MyEntity, int, MyDbContext>, IMyRepos
 }
 ```
 
-### 4. Implement Message Handler with Database
+### 4. Implement Manual RabbitMQ Consumer with Database
 
 ```csharp
-public class MyMessageHandler : IMessageHandler
+public class MyRabbitMqConsumerService : BackgroundService
 {
-    private readonly IMyRepository _repository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IRabbitMqClient _rabbitMqClient;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<MyRabbitMqConsumerService> _logger;
 
-    public async Task HandleMessageAsync(string message, BasicDeliverEventArgs args)
+    public MyRabbitMqConsumerService(IRabbitMqClient rabbitMqClient, IServiceProvider serviceProvider, ILogger<MyRabbitMqConsumerService> logger)
     {
-        await _unitOfWork.BeginTransactionAsync();
-        try
+        _rabbitMqClient = rabbitMqClient;
+        _serviceProvider = serviceProvider;
+        _logger = logger;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("Starting manual RabbitMQ consumer loop...");
+        await _rabbitMqClient.ConsumeAsync(async (message, args) =>
         {
-            var entity = new MyEntity { Name = message };
-            await _repository.AddAsync(entity);
-            await _repository.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
-        }
-        catch
-        {
-            await _unitOfWork.RollbackTransactionAsync();
-            throw;
-        }
+            using var scope = _serviceProvider.CreateScope();
+            var repository = scope.ServiceProvider.GetRequiredService<IMyRepository>();
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await unitOfWork.BeginTransactionAsync();
+            try
+            {
+                var entity = new MyEntity { Name = message };
+                await repository.AddAsync(entity);
+                await repository.SaveChangesAsync();
+                await unitOfWork.CommitTransactionAsync();
+            }
+            catch
+            {
+                await unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+        }, stoppingToken);
     }
 }
 ```

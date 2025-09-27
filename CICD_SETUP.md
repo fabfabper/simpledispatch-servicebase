@@ -218,6 +218,7 @@ dotnet add package SimpleDispatch.ServiceBase --version 1.2.0
    - Keep README.md updated with installation instructions
    - Document breaking changes in release notes
    - Provide migration guides for major versions
+   - Ensure usage examples reflect the manual RabbitMQ consumer (BackgroundService) pattern
 
 ## 🎯 Next Steps
 

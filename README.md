@@ -4,9 +4,9 @@ A NuGet package that provides a base foundation for SimpleDispatch microservices
 
 ## Features
 
-- **RabbitMQ Integration**: Built-in RabbitMQ client for message consumption and publishing
+- **RabbitMQ Integration**: Built-in RabbitMQ client for message publishing and manual message consumption via BackgroundService
 - **PostgreSQL Database**: Entity Framework Core integration with repository pattern
-- **Extensible Message Handling**: Override message handlers to implement custom business logic
+- **Manual Message Consumption**: Use BackgroundService for explicit, robust RabbitMQ consumer logic
 - **REST API Foundation**: Pre-configured ASP.NET Core setup with controllers, Swagger, and health checks
 - **Repository Pattern**: Base repository with CRUD operations and Unit of Work pattern
 - **Transaction Management**: Built-in transaction support for database operations
@@ -14,7 +14,7 @@ A NuGet package that provides a base foundation for SimpleDispatch microservices
 - **Logging**: Structured logging with configurable levels
 - **Health Checks**: Built-in health check endpoints
 - **CORS Support**: Pre-configured CORS for cross-origin requests
-- **Proper DI Scoping**: Correctly handles scoped services (like DbContext) in message handlers
+- **Proper DI Scoping**: Correctly handles scoped services (like DbContext) in consumers and producers
 
 ## Installation
 
@@ -49,13 +49,15 @@ dotnet add package SimpleDispatch.ServiceBase
 
 ## Quick Start
 
-### 1. Create a new microservice
+### 1. Create a new microservice with a manual RabbitMQ consumer
 
-```csharp
+````csharp
 using SimpleDispatch.ServiceBase;
 using SimpleDispatch.ServiceBase.Interfaces;
 using SimpleDispatch.ServiceBase.Database;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client.Events;
 
 public class MyMicroservice : BaseService
@@ -64,17 +66,10 @@ public class MyMicroservice : BaseService
     {
         // Configure port programmatically (optional)
         ConfigureHttpPort(8080); // HTTP only
-
         // Or configure both HTTP and HTTPS ports
         // ConfigureHttpPorts(8080, 8443);
-
         // Or configure custom URLs
         // ConfigureUrls("http://0.0.0.0:8080", "https://0.0.0.0:8443");
-    }
-
-    protected override void RegisterMessageHandler()
-    {
-        Builder.Services.AddScoped<IMessageHandler, MyMessageHandler>();
     }
 
     protected override void ConfigureDatabase()
@@ -85,17 +80,15 @@ public class MyMicroservice : BaseService
     protected override void ConfigureServices()
     {
         Builder.Services.AddScoped<IMyRepository, MyRepository>();
+        // Register the RabbitMQ consumer as a BackgroundService
+        Builder.Services.AddHostedService<MyRabbitMqConsumerService>();
     }
 }
 
 public class MyDbContext : BaseDbContext
 {
-    public MyDbContext(DbContextOptions<MyDbContext> options) : base(options)
-    {
-    }
-
+    public MyDbContext(DbContextOptions<MyDbContext> options) : base(options) { }
     public DbSet<MyEntity> MyEntities { get; set; } = null!;
-
     protected override void ConfigureEntities(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<MyEntity>(entity =>
@@ -106,27 +99,32 @@ public class MyDbContext : BaseDbContext
     }
 }
 
-public class MyMessageHandler : IMessageHandler
+// Manual RabbitMQ consumer using BackgroundService
+public class MyRabbitMqConsumerService : BackgroundService
 {
-    private readonly ILogger<MyMessageHandler> _logger;
-    private readonly IMyRepository _repository;
+    private readonly IRabbitMqClient _rabbitMqClient;
+    private readonly ILogger<MyRabbitMqConsumerService> _logger;
+    private readonly IServiceProvider _serviceProvider;
 
-    public MyMessageHandler(ILogger<MyMessageHandler> logger, IMyRepository repository)
+    public MyRabbitMqConsumerService(IRabbitMqClient rabbitMqClient, ILogger<MyRabbitMqConsumerService> logger, IServiceProvider serviceProvider)
     {
+        _rabbitMqClient = rabbitMqClient;
         _logger = logger;
-        _repository = repository;
+        _serviceProvider = serviceProvider;
     }
 
-    public async Task HandleMessageAsync(string message, BasicDeliverEventArgs args)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Processing custom message: {Message}", message);
-
-        // Implement your custom message handling logic here
-        var entity = new MyEntity { Name = message };
-        await _repository.AddAsync(entity);
-        await _repository.SaveChangesAsync();
-
-        await Task.CompletedTask;
+        _logger.LogInformation("Starting manual RabbitMQ consumer loop...");
+        await _rabbitMqClient.ConsumeAsync(async (message, args) =>
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var repository = scope.ServiceProvider.GetRequiredService<IMyRepository>();
+            _logger.LogInformation("Received message: {Message}", message);
+            var entity = new MyEntity { Name = message };
+            await repository.AddAsync(entity);
+            await repository.SaveChangesAsync();
+        }, stoppingToken);
     }
 }
 
@@ -139,7 +137,7 @@ public class Program
         await service.RunAsync();
     }
 }
-```
+
 
 ### 2. Configure database and RabbitMQ settings
 
@@ -177,7 +175,7 @@ Add the following to your `appsettings.json`:
     "PrefetchCount": 1
   }
 }
-```
+````
 
 ### 3. Create repositories and controllers
 
@@ -236,8 +234,9 @@ public class MyController : BaseApiController
             await _repository.AddAsync(entity);
             await _repository.SaveChangesAsync();
 
-            // Publish event
-            await RabbitMqClient.PublishMessageAsync($"Entity created: {entity.Name}", "entity.created");
+            // Publish event (using the producer)
+            // If you registered the RabbitMQ producer, inject IRabbitMqProducer and use:
+            // await _producer.PublishAsync($"Entity created: {entity.Name}", "entity.created");
 
             await _unitOfWork.CommitTransactionAsync();
 
@@ -324,21 +323,11 @@ The package provides extension methods for easier configuration:
 ```csharp
 using SimpleDispatch.ServiceBase.Extensions;
 
-// In your Program.cs or Startup.cs
-builder.Services.AddSimpleDispatchBase(options =>
-{
-    options.HostName = "rabbitmq-server";
-    options.QueueName = "my-queue";
-});
-
-// Add PostgreSQL database support
-builder.Services.AddPostgreSqlDatabase<MyDbContext>(configuration);
-
-// Add a custom message handler
-builder.Services.AddMessageHandler<MyCustomMessageHandler>();
-
-// Add repositories
-builder.Services.AddRepository<IMyRepository, MyRepository>();
+// In your service configuration
+builder.Services.AddRabbitMqProducer(configuration); // Register RabbitMQ producer
+builder.Services.AddPostgreSqlDatabase<MyDbContext>(configuration); // Register PostgreSQL
+builder.Services.AddScoped<IMyRepository, MyRepository>(); // Register repositories
+builder.Services.AddHostedService<MyRabbitMqConsumerService>(); // Register manual consumer
 ```
 
 ## API Endpoints
@@ -347,7 +336,7 @@ The base service automatically provides the following endpoints:
 
 - `GET /health` - Health check endpoint
 - `GET /api/messaging/health` - Messaging service health check
-- `POST /api/messaging/publish` - Publish a message to RabbitMQ
+- `POST /api/messaging/publish` - Publish a message to RabbitMQ (using the registered producer)
 
 ## Dependencies
 

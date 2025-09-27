@@ -29,7 +29,7 @@
 
 - [ ] README.md is complete with GitHub Packages installation instructions
 - [ ] CHANGELOG.md has entry for current version
-- [ ] Usage examples are provided
+- [ ] Usage examples are provided (including manual RabbitMQ consumer pattern)
 - [ ] License file is included
 
 ## 🔧 Deployment Steps
@@ -105,7 +105,7 @@ dotnet add package SimpleDispatch.ServiceBase --version 1.1.0
 - [ ] Package contains all necessary assemblies
 - [ ] Dependencies are correctly resolved
 - [ ] Documentation files are included
-- [ ] Examples work as expected
+- [ ] Examples work as expected (manual RabbitMQ consumer pattern)
 
 ## 🔄 Alternative Deployment Methods
 
